@@ -11,7 +11,10 @@ public class TankWarClient extends Frame
 	public static final int GAME_WIDTH = 800;
 	public static final int GAME_HEIGHT = 600;
 	
-	Tank myTank = new Tank(50, 50, this);
+	Tank myTank = new Tank(50, 50, true, this);
+	Tank enemyTank = new Tank(80, 80, false, this);
+	
+	Explode e = new Explode(70, 70, this);
 	
 	List<Missile> missiles = new ArrayList<Missile>();
 	
@@ -23,9 +26,12 @@ public class TankWarClient extends Frame
 		for(int i=0; i < missiles.size(); i++)
 		{
 			Missile m = missiles.get(i);
+			m.hitTank(enemyTank);
 			m.draw(g);
 		}
 		myTank.draw(g);
+		enemyTank.draw(g);
+		e.draw(g);
 	}
 
 	//Ë«»º³åÏûÉÁË¸
