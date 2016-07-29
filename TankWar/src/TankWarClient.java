@@ -3,24 +3,29 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-
-
-
+import java.util.List;
+import java.util.ArrayList;
+ 
 public class TankWarClient extends Frame 
 {
 	public static final int GAME_WIDTH = 800;
 	public static final int GAME_HEIGHT = 600;
 	
-	int x = 50, y = 50;
+	Tank myTank = new Tank(50, 50, this);
+	
+	List<Missile> missiles = new ArrayList<Missile>();
 	
 	Image offScreenImage = null;
 	
 	public void paint(Graphics g)
 	{
-		//Color c = g.getColor();
-		g.setColor(Color.blue);
-		g.fillOval(x, y, 30, 30);
-		//g.setColor(c);
+		g.drawString("missles count:" + missiles.size(), 10, 50);
+		for(int i=0; i < missiles.size(); i++)
+		{
+			Missile m = missiles.get(i);
+			m.draw(g);
+		}
+		myTank.draw(g);
 	}
 
 	//双缓冲消闪烁
@@ -79,7 +84,6 @@ public class TankWarClient extends Frame
 					Thread.sleep(50);
 				} catch (InterruptedException e)
 				{
-					// TODO 自动生成的 catch 块
 					e.printStackTrace();
 				}
 			}
@@ -88,24 +92,14 @@ public class TankWarClient extends Frame
 		
 	private class KeyMonitor extends KeyAdapter 
 	{
+		public void keyReleased(KeyEvent e)
+		{
+			myTank.keyReleased(e);
+		}
+
 		public void keyPressed(KeyEvent e)
 		{
-			int key = e.getKeyCode();
-			switch(key)
-			{
-			case KeyEvent.VK_RIGHT:
-				x += 5;
-				break;
-			case KeyEvent.VK_LEFT:
-				x -= 5;
-				break;
-			case KeyEvent.VK_UP:
-				y -= 5;
-				break;
-			case KeyEvent.VK_DOWN:
-				y += 5;
-				break;
-			}
+			myTank.keyPressed(e);
 		}
 		
 	}
