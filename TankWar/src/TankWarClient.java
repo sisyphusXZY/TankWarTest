@@ -4,8 +4,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
+import java.util.Random;
 import java.util.ArrayList;
- 
+
 public class TankWarClient extends Frame 
 {
 	public static final int GAME_WIDTH = 800;
@@ -15,26 +16,58 @@ public class TankWarClient extends Frame
 	
 	Wall w1 = new Wall(100, 200, 20, 150, this), w2 = new Wall(400, 200, 300, 20, this);
 	
+	Eatable blood = new Eatable(200, 400, Eatable.Direction.STOP, true, this);
+	
+	private static Random r = new Random();
+	
 	List<Missile> missiles = new ArrayList<Missile>();
 	List<Tank> tanks = new ArrayList<Tank>();	
 	List<Explode> explodes = new ArrayList<Explode>();
 	
+	int count = 0;
+	int stage = 1;
 	Image offScreenImage = null;
-	
+	//boolean once = true;
 	public void paint(Graphics g)
 	{
-		g.drawString("missles count:" + missiles.size(), 10, 50);
-		g.drawString("explode count:" + explodes.size(), 10, 70);
-		g.drawString("tanks count:" + tanks.size(), 10, 90);
+		w1.draw(g);
+		w2.draw(g);
+		if(tanks.size() == 0)
+		{
+			
+			if(count >= 1000*stage)
+			{	
+				if(count <= count + 100)
+				{
+				Color c = g.getColor();
+				Font f1 = new Font("楷体", Font.BOLD, 110);
+				Font f2 = new Font("楷体", Font.BOLD, 50);
+				g.setFont(f1);
+				g.setColor(Color.red);
+				g.drawString("NO." + stage +"Stage", 60, 320);
+				g.setFont(f2);
+				g.drawString("KEEP GOING!(~￣▽￣)~", 120, 390);
+				g.setColor(c);
+				}
+				/*	if(once)
+				{*/
+				stage ++;
+					//once = false;
+				//}
+			}
+	//		if(count >= (1000*stage + 100)) once = true;
+			for(int i=0; i<r.nextInt(15*stage) + 5; i++)
+			tanks.add(new Tank(15 + r.nextInt(700) + 40*(i+1), r.nextInt(470) + 100, false, Tank.Direction.D, this));
+		}
 		
 		for(int i=0; i < missiles.size(); i++)
 		{
 			Missile m = missiles.get(i);
 			m.hitTanks(tanks);
 			m.hitTank(myTank);
+			m.draw(g);
 			m.hitWall(w1);
 			m.hitWall(w2);
-			m.draw(g);
 		}
 		
 		for(int i=0; i < explodes.size(); i++)
@@ -49,10 +82,22 @@ public class TankWarClient extends Frame
 			t.collidesWithWall(w1);
 			t.collidesWithWall(w2);
 			t.draw(g);
+			t.collidesWistTanks(tanks);
 		}
 		myTank.draw(g);
-		w1.draw(g);
-		w2.draw(g);
+		myTank.collidesWithWall(w1);
+		myTank.collidesWithWall(w2);
+		
+		blood.draw(g);
+		myTank.TankEat(blood);
+
+		//g.drawString("Missiles count:" + missiles.size(), 10, 50);
+		Font f1 = new Font("楷体", Font.BOLD, 20);
+		g.setFont(f1);
+		g.drawString("Count:" + count, 10, 50);
+		g.drawString("tanks count:" + tanks.size(), 10, 70);
+		g.drawString("Stage:" + stage, 10, 90);
+		
 	}
 
 	//双缓冲消闪烁
@@ -75,7 +120,7 @@ public class TankWarClient extends Frame
 	{
 		for(int i=0; i<10; i++)
 		{
-			tanks.add(new Tank(50 + 40*(i+1), 50, false, Tank.Direction.D, this));
+			tanks.add(new Tank(50 + 40*(i+1), 400, false, Tank.Direction.D, this));
 		}
 		
 		this.setLocation(200,100);
@@ -96,6 +141,7 @@ public class TankWarClient extends Frame
 		setVisible(true);
 		
 		new Thread(new PaintThread()).start();
+		new Thread(new EatThread()).start();
 	}
 	 
 	public static void main(String[] args) 
@@ -121,7 +167,55 @@ public class TankWarClient extends Frame
 			}
 		}
 	}
+	
+	private class EatThread implements Runnable 
+	{
+		public void run()
+		{
+			while(true)
+			{
+				if(!blood.isLive())
+				{
+					blood.setLive(true);
+					blood.x = 15 + r.nextInt(600);
+					blood.y = r.nextInt(400) + 50;
+				}
+				try
+				{
+					Thread.sleep(15000);
+				} catch (InterruptedException e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	/*		
+	public void Stage(Graphics g)
+	{
+		if(count >= 1000*stage)
+		{
+		class TimeTask
+			{
+				public void string()
+				{
+					Color c = g.getColor();
+					Font f1 = new Font("楷体", Font.BOLD, 110);
+					Font f2 = new Font("楷体", Font.BOLD, 50);
+					g.setFont(f1);
+					g.setColor(Color.red);
+					g.drawString("NO." + stage +"Stage", 60, 320);
+					g.setFont(f2);
+					g.drawString("KEEP GOING!(~￣▽￣)~", 120, 390);
+					g.setColor(c);
+				}
 		
+			//计时器到底怎么用的啊啊啊啊！！！！！！八嘎！！！ 7/31/2016 1:12
+	
+		}
+	}
+		}*/
 	private class KeyMonitor extends KeyAdapter 
 	{
 		public void keyReleased(KeyEvent e)

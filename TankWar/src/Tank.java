@@ -1,7 +1,9 @@
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.*;
+import java.sql.Time;
 import java.util.*;
 
 public class Tank
@@ -17,6 +19,20 @@ public class Tank
 	private boolean good;
 	private boolean live = true;
 	
+	private BloodBar bb = new BloodBar();
+	
+	private int life = 100;
+	
+	public int getLife()
+	{
+		return life;
+	}
+
+	public void setLife(int life)
+	{
+		this.life = life;
+	}
+
 	public boolean isLive()
 	{
 		return live;
@@ -37,6 +53,8 @@ public class Tank
 	
 	private int step  = r.nextInt(12) + 3;
 	
+	private char game[] = {'g','a','m','e'};
+	
 	public Tank(int x, int y, boolean good)
 	{
 		this.x = x;
@@ -53,21 +71,41 @@ public class Tank
 	
 	public void draw(Graphics g)
 	{
+		
 		if(!live) 
 		{
 			if(!good)	
 			{
 				tc.tanks.remove(this);
+				tc.count+=10;
 			}
-		return;
+			else 
+			{
+				Color c = g.getColor();
+				Font f1 = new Font("Ώ¬Με", Font.BOLD, 110);
+				Font f2 = new Font("Ώ¬Με", Font.BOLD, 50);
+				g.setFont(f1);
+				g.setColor(Color.red);
+				g.drawString("GAME OVER", 130, 320);
+				g.setFont(f2);
+				g.drawString("Ha~Ha~Ha~(~£ώ¨£ώ)~", 140, 370);
+				g.setColor(c);
+			}
+			return;
 		}
-		
+
 		Color c = g.getColor();
-	 	if(good) g.setColor(Color.BLUE);
+	 	if(good) 
+	 	{
+	 		g.setColor(Color.BLUE);
+	 		bb.draw(g);
+	 	}
 	 	else g.setColor(Color.YELLOW);
 	 	g.fillOval(x, y, WIDTH, HEIGHT);
 		g.setColor(c);
 	
+		
+		
 		switch(ptDir)
 		{
 		case L:
@@ -167,6 +205,48 @@ public class Tank
 		
 	}
 	
+	void move2()
+	{
+		switch(dir)
+		{
+		case L:
+			x -= 3*X_SPEED;
+			break;
+		case R:
+			x += 3*X_SPEED;
+			break;
+		case U:
+			y -= 3*Y_SPEED;
+			break;
+		case D:
+			y += 3*Y_SPEED;
+			break;
+		}
+		if(this.dir != Direction.STOP)
+		{
+			this.ptDir = this.dir;
+		}
+		
+		if(x < 0) x = 0;
+		if(y < 30) y = 30;
+		if(x + Tank.WIDTH > TankWarClient.GAME_WIDTH) x = TankWarClient.GAME_WIDTH - Tank.WIDTH;
+		if(y + Tank.HEIGHT > TankWarClient.GAME_HEIGHT) y = TankWarClient.GAME_HEIGHT - Tank.HEIGHT;
+	
+		if(!good)
+		{
+			Direction[] dirs = Direction.values();
+			if(step == 0)
+			{
+				step = r.nextInt(12) + 3;
+				int rn = r.nextInt(dirs.length);
+				dir = dirs[rn];
+			}
+			step--;
+			if(r.nextInt(33) > 30) this.fire();            
+		}
+		
+	}
+	
 	public void keyPressed(KeyEvent e)
 	{
 		int key = e.getKeyCode();
@@ -198,13 +278,64 @@ public class Tank
 		return m;
 		
 	}
+	
+	public Missile fire(Direction dir)
+	{
+		if(!live) return null;
+		int x = this.x + Tank.WIDTH/2 - Missile.WIDTH/2;
+		int y = this.y + Tank.HEIGHT/2 - Missile.HEIGHT/2;
+		Missile m = new Missile(x, y, good, dir, this.tc);
+		tc.missiles.add(m);
+		return m;
+		
+	}
+	
+	public void superFire()
+	{
+		Direction[] dirs  = Direction.values();
+		for(int i=0; i<8; i++)
+		{
+			fire(dirs[i]);
+		}
+	}
 
+	public void superFire2()
+	{
+		for(int i=0; i<tc.tanks.size(); i++)
+		{
+			try
+			{
+				Thread.sleep(20);
+			} catch (InterruptedException e)
+			{
+				e.printStackTrace();
+			}
+			tc.tanks.get(i).setLive(false);
+			Explode e = new Explode(tc.tanks.get(i).x, tc.tanks.get(i).y, tc);
+			tc.explodes.add(e);
+		}
+	}
+	
 	public void keyReleased(KeyEvent e)
 	{
 		int key = e.getKeyCode();
 		switch(key)
 		{
-		case KeyEvent.VK_CONTROL:
+		case KeyEvent.VK_F2:
+			tc.myTank.live = true;
+			tc.myTank.life = 100;
+			tc.stage = 1;
+			tc.count = 0;
+			tc.myTank.x = 50;
+			tc.myTank.y = 50;
+			break;
+		case KeyEvent.VK_B:
+			superFire();
+			break;
+		case KeyEvent.VK_V:
+			superFire2();
+			break;
+		case KeyEvent.VK_SPACE:
 			fire();
 			break;
 		case KeyEvent.VK_RIGHT:
@@ -245,17 +376,166 @@ public class Tank
 	{
 		if(this.live && this.getRect().intersects(w.getRect()))
 		{
-			if(this.dir == Direction.L) dir = Direction.R;
-			else if(this.dir == Direction.LU) dir = Direction.D;
-			else if(this.dir == Direction.U) dir = Direction.D;
-			else if(this.dir == Direction.RU) dir = Direction.D;
-			else if(this.dir == Direction.R) dir = Direction.L;
-			else if(this.dir == Direction.RD) dir = Direction.U;
-			else if(this.dir == Direction.D) dir = Direction.U;
-			else if(this.dir == Direction.LD) dir = Direction.U;
+			if(this.dir == Direction.L) 
+			{
+				dir = Direction.R;
+				move2();
+				step = 0;
+			}
+			else if(this.dir == Direction.LU) 
+			{
+				dir = Direction.RD;
+				move2();
+				step = 0;
+			}
+			else if(this.dir == Direction.U) 
+			{
+				dir = Direction.D;
+				move2();
+				step = 0;
+			}
+			else if(this.dir == Direction.RU) 
+			{
+				dir = Direction.LD;
+				move2();
+				step = 0;
+			}
+			else if(this.dir == Direction.R) 
+			{
+				dir = Direction.L;
+				move2();
+				step = 0;
+			}
+			else if(this.dir == Direction.RD) 
+			{
+				dir = Direction.LU;
+				move2();
+				step = 0;
+			}
+			else if(this.dir == Direction.D) 
+			{
+				dir = Direction.U;
+				move2();
+				step = 0;
+			}
+			else if(this.dir == Direction.LD) 
+			{
+				dir = Direction.RU;
+				move2();
+				step = 0;
+			}
 			return true;
 		}
 		else return false;
 	}
 	
+	public boolean collidesWistTanks(java.util.List<Tank> tanks)
+	{
+		for(int i=0; i<tanks.size(); i++)
+		{
+			Tank t = tanks.get(i);
+			if(this != t && this.live && this.getRect().intersects(t.getRect()))
+			{
+				if(this.dir == Direction.L) 
+				{
+					dir = Direction.R;
+					move2();
+					step = 0;
+				}
+				else if(this.dir == Direction.LU) 
+				{
+					dir = Direction.RD;
+					move2();
+					step = 0;
+				}
+				else if(this.dir == Direction.U) 
+				{
+					dir = Direction.D;
+					move2();
+					step = 0;
+				}
+				else if(this.dir == Direction.RU) 
+				{
+					dir = Direction.LD;
+					move2();
+					step = 0;
+				}
+				else if(this.dir == Direction.R) 
+				{
+					dir = Direction.L;
+					move2();
+					step = 0;
+				}
+				else if(this.dir == Direction.RD) 
+				{
+					dir = Direction.LU;
+					move2();
+					step = 0;
+				}
+				else if(this.dir == Direction.D) 
+				{
+					dir = Direction.U;
+					move2();
+					step = 0;
+				}
+				else if(this.dir == Direction.LD) 
+				{
+					dir = Direction.RU;
+					move2();
+					step = 0;
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private class BloodBar
+	{
+		public void draw(Graphics g)
+		{
+			Color c = g.getColor();
+			g.setColor(Color.red);
+			g.drawRect(x-15, y-12, WIDTH*2, 10);
+			int w = WIDTH * life/100 *2;
+			g.fillRect(x-15, y-12, w, 10);
+			g.setColor(c);
+		}
+	}
+	public void TankEat(Eatable b)
+	{
+		if(this.getRect().intersects(b.getRect()) && this.isGood())
+		{
+			if(this.getLife() < 100) 
+			{
+				this.setLife(this.getLife()+5);
+				b.setLive(false);
+				tc.count += 50;
+			}
+			else return ;
+		}	
+	}	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
