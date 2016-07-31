@@ -14,15 +14,28 @@ public class Tank
 	public static final int HEIGHT = 30;
 	private int x ,y;
 	
+
 	private static Random r = new Random();
 	
 	private boolean good;
+	private boolean boss;
+	public boolean isBoss()
+	{
+		return boss;
+	}
+
 	private boolean live = true;
 	
 	private BloodBar bb = new BloodBar();
+	private BloodBar bossbb = new BloodBar();
 	
 	private int life = 100;
 	
+	public void setTank(int x, int y)
+	{
+		this.x = x;
+		this.y = y;
+	}
 	public int getLife()
 	{
 		return life;
@@ -53,8 +66,6 @@ public class Tank
 	
 	private int step  = r.nextInt(12) + 3;
 	
-	private char game[] = {'g','a','m','e'};
-	
 	public Tank(int x, int y, boolean good)
 	{
 		this.x = x;
@@ -62,9 +73,10 @@ public class Tank
 		this.good = good;
 	}
 	
-	public Tank(int x, int y, boolean good, Direction dir, TankWarClient tc)
+	public Tank(int x, int y, boolean good, boolean boss, Direction dir, TankWarClient tc)
 	{
 		this(x, y, good);
+		this.boss = boss;
 		this.dir = dir;
 		this.tc = tc;
 	}
@@ -74,24 +86,28 @@ public class Tank
 		
 		if(!live) 
 		{
-			if(!good)	
+			if( ! boss)
 			{
-				tc.tanks.remove(this);
-				tc.count+=10;
+				if(!good)	
+				{
+					tc.tanks.remove(this);
+					tc.count+=10;
+				}
+				else 
+				{
+					Color c = g.getColor();
+					Font f1 = new Font("楷体", Font.BOLD, 110);
+					Font f2 = new Font("楷体", Font.BOLD, 50);
+					g.setFont(f1);
+					g.setColor(Color.red);
+					g.drawString("GAME OVER", 130, 320);
+					g.setFont(f2);
+					g.drawString("Ha~Ha~Ha~(~￣▽￣)~", 140, 370);
+					g.setColor(c);
+				}
+				return;
 			}
-			else 
-			{
-				Color c = g.getColor();
-				Font f1 = new Font("楷体", Font.BOLD, 110);
-				Font f2 = new Font("楷体", Font.BOLD, 50);
-				g.setFont(f1);
-				g.setColor(Color.red);
-				g.drawString("GAME OVER", 130, 320);
-				g.setFont(f2);
-				g.drawString("Ha~Ha~Ha~(~￣▽￣)~", 140, 370);
-				g.setColor(c);
-			}
-			return;
+			else return;
 		}
 
 		Color c = g.getColor();
@@ -99,6 +115,11 @@ public class Tank
 	 	{
 	 		g.setColor(Color.BLUE);
 	 		bb.draw(g);
+	 	}
+	 	else if(boss)
+	 	{
+	 		g.setColor(Color.black);
+	 		bossbb.draw(g);
 	 	}
 	 	else g.setColor(Color.YELLOW);
 	 	g.fillOval(x, y, WIDTH, HEIGHT);
@@ -190,7 +211,7 @@ public class Tank
 		if(x + Tank.WIDTH > TankWarClient.GAME_WIDTH) x = TankWarClient.GAME_WIDTH - Tank.WIDTH;
 		if(y + Tank.HEIGHT > TankWarClient.GAME_HEIGHT) y = TankWarClient.GAME_HEIGHT - Tank.HEIGHT;
 	
-		if(!good)
+		if(!good || boss)
 		{
 			Direction[] dirs = Direction.values();
 			if(step == 0)
@@ -200,7 +221,8 @@ public class Tank
 				dir = dirs[rn];
 			}
 			step--;
-			if(r.nextInt(33) > 30) this.fire();            
+			if(r.nextInt(33) > 30 && !boss) this.fire();
+			else if(r.nextInt(32) > 30 && boss) this.superFire();
 		}
 		
 	}
@@ -303,6 +325,9 @@ public class Tank
 	{
 		for(int i=0; i<tc.tanks.size(); i++)
 		{
+			tc.tanks.get(i).setLive(false);
+			Explode e1 = new Explode(tc.tanks.get(i).x, tc.tanks.get(i).y, tc);
+			tc.explodes.add(e1);
 			try
 			{
 				Thread.sleep(20);
@@ -310,9 +335,10 @@ public class Tank
 			{
 				e.printStackTrace();
 			}
-			tc.tanks.get(i).setLive(false);
-			Explode e = new Explode(tc.tanks.get(i).x, tc.tanks.get(i).y, tc);
-			tc.explodes.add(e);
+			
+			tc.missiles.get(i).setLive(false);
+			Explode e2 = new Explode(tc.tanks.get(i).x, tc.tanks.get(i).y, tc);
+			tc.explodes.add(e2);
 		}
 	}
 	
@@ -326,14 +352,33 @@ public class Tank
 			tc.myTank.life = 100;
 			tc.stage = 1;
 			tc.count = 0;
+			tc.missileNum = 0;
+			tc.missileNum2 = 0;
 			tc.myTank.x = 50;
 			tc.myTank.y = 50;
 			break;
 		case KeyEvent.VK_B:
+			if(tc.missileNum2 >= 1) 
+			{
+				tc.missileNum2 --;
+				superFire();
+			}
+			break;	
+			//测试用
+		case KeyEvent.VK_M:
+			
+			superFire2();
+			break;
+		case KeyEvent.VK_N:
+			
 			superFire();
 			break;
 		case KeyEvent.VK_V:
-			superFire2();
+			if(tc.missileNum >= 1) 
+			{
+				tc.missileNum --;
+				superFire2();
+			}
 			break;
 		case KeyEvent.VK_SPACE:
 			fire();
@@ -376,6 +421,11 @@ public class Tank
 	{
 		if(this.live && this.getRect().intersects(w.getRect()))
 		{
+			if(this.isGood())
+			{
+				this.setLife(this.getLife()-20);
+				if(this.getLife() <= 0) this.setLive(false);
+			}
 			if(this.dir == Direction.L) 
 			{
 				dir = Direction.R;
@@ -494,26 +544,42 @@ public class Tank
 	{
 		public void draw(Graphics g)
 		{
+			 int i=0;
 			Color c = g.getColor();
 			g.setColor(Color.red);
-			g.drawRect(x-15, y-12, WIDTH*2, 10);
+			if(life == 150) i = 1;
+			if(i == 1) g.drawRect(x-15, y-12, WIDTH * 150/100 *2, 10);
+			else g.drawRect(x-15, y-12, WIDTH*2, 10);
 			int w = WIDTH * life/100 *2;
 			g.fillRect(x-15, y-12, w, 10);
-			g.setColor(c);
+			g.setColor(c);		
 		}
+	
 	}
+	
 	public void TankEat(Eatable b)
 	{
-		if(this.getRect().intersects(b.getRect()) && this.isGood())
+		if(b.type == 1 && this.getRect().intersects(b.getRect()) && this.isGood() && this.getLife() < 100)
 		{
-			if(this.getLife() < 100) 
-			{
 				this.setLife(this.getLife()+5);
 				b.setLive(false);
 				tc.count += 50;
-			}
-			else return ;
-		}	
+		}
+		else if(b.type == 2 && this.getRect().intersects(b.getRect()) && this.isGood())
+		{
+			b.setLive(false);
+			tc.missileNum  = 1;
+			tc.count += 50;
+			
+		}
+		else if(b.type == 3 && this.getRect().intersects(b.getRect()) && this.isGood())
+		{
+			b.setLive(false);
+			tc.missileNum2  ++;
+			tc.count += 50;
+			
+		}
+		return ;
 	}	
 }
 

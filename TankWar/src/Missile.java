@@ -17,6 +17,11 @@ public class Missile
 	private TankWarClient tc;
 	
 	private boolean Live = true;
+	public void setLive(boolean live)
+	{
+		Live = live;
+	}
+
 	private boolean good;
 
 	public Missile(int x, int y, Tank.Direction dir)
@@ -47,7 +52,8 @@ public class Missile
 			return ;
 		}
 		Color c = g.getColor();
-		g.setColor(Color.BLACK);
+		if(good) g.setColor(Color.white);
+		else g.setColor(Color.black);
 		g.fillOval(x, y, WIDTH, HEIGHT);
 		g.setColor(c);
 		
@@ -105,14 +111,19 @@ public class Missile
 		{
 			if(t.isGood())
 			{
-				t.setLife(t.getLife()-20);
+				t.setLife(t.getLife()-15);
 				if(t.getLife() <= 0) t.setLive(false);
 			}
-			else t.setLive(false);
-			this.Live = false;
-			Explode e = new Explode(this.x, this.y, tc);
-			tc.explodes.add(e);
-			return true;
+		else if(!t.isBoss()) t.setLive(false);
+		else 
+			{
+				t.setLife(t.getLife()-15);
+				if(t.getLife() <= 0) t.setLive(false);
+			}
+		this.Live = false;
+		Explode e = new Explode(this.x, this.y, tc);
+		tc.explodes.add(e);
+		return true;
 			
 		}
 		return false;

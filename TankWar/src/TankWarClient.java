@@ -12,33 +12,48 @@ public class TankWarClient extends Frame
 	public static final int GAME_WIDTH = 800;
 	public static final int GAME_HEIGHT = 600;
 	
-	Tank myTank = new Tank(50, 50, true, Tank.Direction.STOP, this);
+	private int bloodType = 1;
+	private int supermissileType = 2;
+	private int supermissile2Type = 3;
 	
-	Wall w1 = new Wall(100, 200, 20, 150, this), w2 = new Wall(400, 200, 300, 20, this);
+	Tank myTank = new Tank(50, 50, true, false, Tank.Direction.STOP, this);
+	Tank bossTank = new Tank(80, 100, false, true, Tank.Direction.STOP, this);
 	
-	Eatable blood = new Eatable(200, 400, Eatable.Direction.STOP, true, this);
+	Wall w1 = new Wall(100, 100, 20, 450, this), 
+		w2 = new Wall(250, 150, 480, 20, this),
+		w3 = new Wall(430, 230, 20, 300, this);
+	
+	Eatable blood = new Eatable(200, 400, Eatable.Direction.STOP, true, bloodType, this);
+	Eatable superMissile = new Eatable(300, 600, Eatable.Direction.STOP, true, supermissileType, this);
+	Eatable superMissile2 = new Eatable(400, 500, Eatable.Direction.STOP, true, supermissile2Type, this);
 	
 	private static Random r = new Random();
-	
 	List<Missile> missiles = new ArrayList<Missile>();
 	List<Tank> tanks = new ArrayList<Tank>();	
 	List<Explode> explodes = new ArrayList<Explode>();
 	
 	int count = 0;
 	int stage = 1;
+	int missileNum = 0;
+	int missileNum2 = 0;
 	Image offScreenImage = null;
+	
 	//boolean once = true;
 	public void paint(Graphics g)
 	{
 		w1.draw(g);
 		w2.draw(g);
+		w3.draw(g);
 		if(tanks.size() == 0)
 		{
-			
-			if(count >= 1000*stage)
-			{	
-				if(count <= count + 100)
-				{
+	//		if(count >= (1000*stage + 100)) once = true;
+			for(int i=0; i<r.nextInt(15*stage) + 5; i++)
+			tanks.add(new Tank(15 + r.nextInt(700) + 40*(i+1), r.nextInt(470) + 100, false, false, Tank.Direction.D, this));
+		}
+		if(count >= 1000*stage)
+		{	
+			if(count <= count + 100)
+			{
 				Color c = g.getColor();
 				Font f1 = new Font("¿¬Ìå", Font.BOLD, 110);
 				Font f2 = new Font("¿¬Ìå", Font.BOLD, 50);
@@ -48,26 +63,28 @@ public class TankWarClient extends Frame
 				g.setFont(f2);
 				g.drawString("KEEP GOING!(~£þ¨Œ£þ)~", 120, 390);
 				g.setColor(c);
-				}
-				/*	if(once)
-				{*/
-				stage ++;
-					//once = false;
-				//}
 			}
-	//		if(count >= (1000*stage + 100)) once = true;
-			for(int i=0; i<r.nextInt(15*stage) + 5; i++)
-			tanks.add(new Tank(15 + r.nextInt(700) + 40*(i+1), r.nextInt(470) + 100, false, Tank.Direction.D, this));
+			stage ++;
 		}
-		
+		if(count >= 1000 )
+		{
+			bossTank.draw(g);
+		}
+		if(count >= 2500 && count <= 2600)
+		{
+			bossTank.setLive(true);
+			bossTank.setLife(150);
+		}
 		for(int i=0; i < missiles.size(); i++)
 		{
 			Missile m = missiles.get(i);
 			m.hitTanks(tanks);
 			m.hitTank(myTank);
+			m.hitTank(bossTank);
 			m.draw(g);
 			m.hitWall(w1);
 			m.hitWall(w2);
+			m.hitWall(w3);
 		}
 		
 		for(int i=0; i < explodes.size(); i++)
@@ -81,6 +98,7 @@ public class TankWarClient extends Frame
 			Tank t = tanks.get(i);
 			t.collidesWithWall(w1);
 			t.collidesWithWall(w2);
+			t.collidesWithWall(w3);
 			t.draw(g);
 			t.collidesWistTanks(tanks);
 		}
@@ -89,15 +107,23 @@ public class TankWarClient extends Frame
 		myTank.collidesWithWall(w2);
 		
 		blood.draw(g);
+		superMissile.draw(g);
+		superMissile2.draw(g);
 		myTank.TankEat(blood);
+		myTank.TankEat(superMissile);
+		myTank.TankEat(superMissile2);
 
 		//g.drawString("Missiles count:" + missiles.size(), 10, 50);
+		Color c = g.getColor();
 		Font f1 = new Font("¿¬Ìå", Font.BOLD, 20);
 		g.setFont(f1);
-		g.drawString("Count:" + count, 10, 50);
+		g.setColor(Color.black);
+		g.drawString("Your Score:" + count, 10, 50);
 		g.drawString("tanks count:" + tanks.size(), 10, 70);
 		g.drawString("Stage:" + stage, 10, 90);
-		
+		g.drawString("Doom[V]:" + missileNum, 10, 110);
+		g.drawString("SuperMissile[B]:" + missileNum2, 10, 130);
+		g.setColor(c);
 	}
 
 	//Ë«»º³åÏûÉÁË¸
@@ -109,7 +135,7 @@ public class TankWarClient extends Frame
 		}
 		Graphics goffScreen = offScreenImage.getGraphics();
 		Color c = goffScreen.getColor();
-		goffScreen.setColor(Color.GREEN);
+		goffScreen.setColor(Color.green);
 		goffScreen.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 		goffScreen.setColor(c);
 		paint(goffScreen);
@@ -120,7 +146,7 @@ public class TankWarClient extends Frame
 	{
 		for(int i=0; i<10; i++)
 		{
-			tanks.add(new Tank(50 + 40*(i+1), 400, false, Tank.Direction.D, this));
+			tanks.add(new Tank(50 + 40*(i+1), 400, false, false, Tank.Direction.D, this));
 		}
 		
 		this.setLocation(200,100);
@@ -134,7 +160,7 @@ public class TankWarClient extends Frame
 			}		
 		});
 		this.setResizable(false);
-		this.setBackground(Color.GREEN);
+		this.setBackground(Color.green);
 		
 		this.addKeyListener(new KeyMonitor());
 		
@@ -182,7 +208,7 @@ public class TankWarClient extends Frame
 				}
 				try
 				{
-					Thread.sleep(15000);
+					Thread.sleep(13000);
 				} catch (InterruptedException e)
 				{
 					e.printStackTrace();

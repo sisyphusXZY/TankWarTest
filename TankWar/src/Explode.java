@@ -8,7 +8,7 @@ public class Explode
 	
 	private TankWarClient tc;
 	
-	int[] diameter = {4, 10, 11, 20, 27, 29, 38, 40, 49, 40, 35, 30, 20, 14, 6, 2};
+	int[] diameter = {4, 10, 11, 27, 38, 40, 35, 30, 20, 14};
 	int step = 0;
 	
 	public Explode(int x, int y, TankWarClient tc)

@@ -13,16 +13,8 @@ public class Eatable
 	
 	private boolean live = true;
 	
-	public boolean isLive()
-	{
-		return live;
-	}
-
-	public void setLive(boolean live)
-	{
-		this.live = live;
-	}
-
+	int type = 0;
+	
 	private boolean bL = false, bU = false, bR = false, bD = false;
 	enum Direction {L, LU, U, RU, R, RD, D, LD, STOP};
 	public static final int X_SPEED = 5;
@@ -32,20 +24,33 @@ public class Eatable
 	
 	private static Random r = new Random();
 	
-	public Eatable(int x, int y, Direction dir, boolean live, TankWarClient tc)
+	public Eatable(int x, int y, Direction dir, boolean live, int type, TankWarClient tc)
 	{
 		this.x = x;
 		this.y = y;
 		this.dir = dir;
 		this.live = true;
+		this.type = type;
 		this.tc = tc;
 	}
 	
+		public boolean isLive()
+	{
+		return live;
+	}
+
+	public void setLive(boolean live)
+	{
+		this.live = live;
+	}
+
 	public void draw(Graphics g)
 	{
 		if(!live) return;
 		Color c = g.getColor();
-		g.setColor(Color.magenta);
+		if(type == 1) g.setColor(Color.magenta);
+		else if(type == 2) g.setColor(Color.gray);
+		else if(type == 3) g.setColor(Color.lightGray);
 		g.fillRect(x, y, w, h);
 		g.setColor(c);	
 		move();

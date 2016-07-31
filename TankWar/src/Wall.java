@@ -16,7 +16,11 @@ public class Wall
 	
 	public void draw(Graphics g)
 	{
+		Color c = g.getColor();
+		if(x == 430) g.setColor(Color.blue);
+		else g.setColor(Color.orange);
 		g.fillRect(x, y, w, h);
+		g.setColor(c);
 	}
 	
 	public Rectangle getRect()
